@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SüngerBOB Pul Tacı - Telegram Mini App</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        neonYellow: '#ffe600',
+                        neonCyan: '#00f3ff',
+                        neonPink: '#ff007f',
+                        neonGreen: '#09ff00',
+                        spongeBg: '#020817',
+                        spongeCard: '#0a1936',
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        neonY: '0 0 15px rgba(255, 230, 0, 0.6), 0 0 30px rgba(255, 230, 0, 0.3)',
+                        neonC: '0 0 15px rgba(0, 243, 255, 0.6), 0 0 30px rgba(0, 243, 255, 0.3)',
+                        neonP: '0 0 15px rgba(255, 0, 127, 0.6), 0 0 30px rgba(255, 0, 127, 0.3)',
+                        glowBtn: '0 0 20px rgba(255, 230, 0, 0.8)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #020817;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+        }
+
+        /* Underwater Floating Bubbles Animation */
+        .bubble {
+            position: absolute;
+            bottom: -50px;
+            background: rgba(0, 243, 255, 0.2);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: rise 10s infinite ease-in-out;
+            box-shadow: 0 0 8px rgba(0, 243, 255, 0.5);
+        }
+
+        @keyframes rise {
+            0% { transform: translateY(0) scale(1); opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { transform: translateY(-1000px) scale(1.5); opacity: 0; }
+        }
+
+        .glow-text-yellow { text-shadow: 0 0 8px #ffe600, 0 0 16px #ffe600; }
+        .glow-text-cyan { text-shadow: 0 0 8px #00f3ff, 0 0 16px #00f3ff; }
+        .glow-text-pink { text-shadow: 0 0 8px #ff007f, 0 0 16px #ff007f; }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-80px) scale(1.3); }
+        }
+        .tap-float-text {
+            position: absolute;
+            animation: floatUp 0.8s ease-out forwards;
+            font-weight: 900;
+            font-family: 'Orbitron', sans-serif;
+            color: #ffe600;
+            text-shadow: 0 0 10px #ffe600, 0 0 20px #ff007f;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .sponge-coin-btn {
+            transition: transform 0.08s ease, box-shadow 0.1s ease;
+        }
+        .sponge-coin-btn:active {
+            transform: scale(0.92);
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #030b1e; }
+        ::-webkit-scrollbar-thumb { background: #00f3ff; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between pb-20 relative">
+
+    <!-- Background Bubble Container -->
+    <div id="bubble-container" class="fixed inset-0 overflow-hidden pointer-events-none z-0"></div>
+
+    <!-- 1. SPLASH SCREEN -->
+    <div id="splash-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-spongeBg p-6 text-center transition-opacity duration-700">
+        <div class="relative mb-6">
+            <div class="w-36 h-36 rounded-full p-1 bg-gradient-to-tr from-neonYellow via-neonCyan to-neonPink shadow-neonY animate-pulse flex items-center justify-center">
+                <img id="splash-logo" src="Neon SungerBOB Pul Tacı.png" onerror="this.src='https://placehold.co/150x150/ffe600/000000?text=Neon+Spongebob'" alt="Neon SungerBOB Logo" class="w-full h-full object-cover rounded-full border-2 border-black">
+            </div>
+            <div class="absolute -bottom-2 -right-2 bg-neonPink text-white p-2 rounded-full text-xs shadow-neonP">
+                <i class="fa-solid fa-crown text-neonYellow text-base"></i>
+            </div>
+        </div>
+        <h1 class="text-3xl font-black font-orbitron text-neonYellow glow-text-yellow mb-2">SüngerBOB Pul Tacı</h1>
+        <p class="text-neonCyan font-semibold text-lg tracking-wider mb-8 animate-bounce">Xoş gəlmisiniz!</p>
+        
+        <div class="w-48 bg-gray-800 rounded-full h-2 overflow-hidden border border-neonCyan/30 mb-2">
+            <div id="splash-bar" class="bg-gradient-to-r from-neonYellow via-neonCyan to-neonPink h-full w-0 transition-all duration-1000"></div>
+        </div>
+        <span class="text-xs text-gray-400 font-mono">Sistem Yüklənir...</span>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div id="app-content" class="relative z-10 w-full max-w-md mx-auto flex-1 flex flex-col px-4 pt-3 hidden">
+
+        <!-- HEADER SECTION -->
+        <header class="bg-spongeCard/80 backdrop-blur-md rounded-2xl p-3 border border-neonCyan/30 shadow-neonC mb-3">
+            <div class="flex items-center justify-between">
+                <!-- Profile Avatar & Info -->
+                <div class="flex items-center space-x-2">
+                    <button onclick="openAvatarModal()" class="relative group focus:outline-none">
+                        <img id="header-avatar" src="https://placehold.co/100x100/00f3ff/000000?text=BOB" class="w-11 h-11 rounded-full border-2 border-neonYellow object-cover shadow-neonY transition transform group-hover:scale-105">
+                        <span class="absolute -bottom-1 -right-1 bg-neonPink text-[10px] px-1 rounded text-white font-bold"><i class="fa-solid fa-camera text-[8px]"></i></span>
+                    </button>
+                    <div>
+                        <div class="text-xs text-gray-300 font-medium flex items-center gap-1">
+                            <span id="user-display-name" class="font-bold text-white truncate max-w-[100px]">İstifadəçi</span>
+                            <span id="user-vip-badge" class="bg-yellow-500/20 text-neonYellow border border-neonYellow/40 text-[9px] px-1.5 py-0.5 rounded font-mono">PULSUZ</span>
+                        </div>
+                        <div class="text-[10px] text-neonCyan font-mono">ID: <span id="user-id-display">--------</span></div>
+                    </div>
+                </div>
+
+                <!-- Balance Display -->
+                <div class="text-right">
+                    <div class="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">BALANS</div>
+                    <div class="flex items-center justify-end space-x-1">
+                        <i class="fa-solid fa-coins text-neonYellow text-sm animate-pulse"></i>
+                        <span id="user-balance" class="text-lg font-black font-orbitron text-neonYellow glow-text-yellow">0.00000</span>
+                        <span class="text-xs font-bold text-white">AZN</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LIVE ACTIVITY FEED TICKER -->
+            <div class="mt-2 pt-2 border-t border-gray-800 flex items-center justify-between text-[10px]">
+                <div class="flex items-center space-x-1.5 text-neonGreen">
+                    <span class="w-2 h-2 rounded-full bg-neonGreen animate-ping"></span>
+                    <span class="font-mono font-bold"><span id="active-users-count">5,142</span> Aktiv İstifadəçi</span>
+                </div>
+                <div id="live-activity-ticker" class="text-gray-300 truncate max-w-[180px] font-mono text-[9.5px] italic">
+                    🔥 Cavid 15.00 AZN çıxardı
+                </div>
+            </div>
+        </header>
+
+        <!-- TOAST MESSAGE BANNER -->
+        <div id="toast-msg" class="hidden mb-3 p-3 rounded-xl bg-neonPink/20 border border-neonPink text-neonPink text-xs font-semibold flex items-center justify-between animate-fade-in">
+            <span id="toast-text">Bildiriş mesajı</span>
+            <button onclick="closeToast()" class="text-white hover:text-gray-300"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- MAIN TAB PAGES -->
+
+        <!-- TAB 1: ƏSAS (TAPPER GAME) -->
+        <section id="tab-main" class="tab-page flex-1 flex flex-col justify-between">
+            <div class="bg-spongeCard/50 p-3 rounded-xl border border-neonYellow/20 mb-2 text-center">
+                <div class="flex justify-between items-center text-xs mb-1 font-mono">
+                    <span class="text-gray-300"><i class="fa-solid fa-bolt text-neonYellow mr-1"></i>Günlük Limit:</span>
+                    <span class="text-neonYellow font-bold"><span id="clicks-today">0</span> / <span id="max-clicks">0</span></span>
+                </div>
+                <div class="w-full bg-gray-900 rounded-full h-2.5 overflow-hidden border border-gray-700">
+                    <div id="click-progress-bar" class="bg-gradient-to-r from-neonYellow to-neonGreen h-full w-0 transition-all duration-200"></div>
+                </div>
+                <div class="text-[10px] text-gray-400 mt-1 flex justify-between">
+                    <span>Qazanc / Tik: <strong id="per-click-earning" class="text-neonCyan">0.00000 AZN</strong></span>
+                    <span class="text-gray-400"><i class="fa-regular fa-clock mr-1"></i>Reset: 24 Saat</span>
+                </div>
+            </div>
+
+            <!-- TAPPER CLICK BUTTON & LOCKED OVERLAY -->
+            <div class="relative my-auto flex flex-col items-center justify-center py-4">
+                
+                <!-- Locked Overlay if user hasn't bought package -->
+                <div id="tapper-locked-overlay" class="absolute inset-0 bg-spongeBg/90 backdrop-blur-sm z-30 rounded-full flex flex-col items-center justify-center p-4 text-center border-2 border-neonPink shadow-neonP">
+                    <div class="w-16 h-16 rounded-full bg-neonPink/20 border border-neonPink flex items-center justify-center mb-2 animate-bounce">
+                        <i class="fa-solid fa-lock text-3xl text-neonPink"></i>
+                    </div>
+                    <h3 class="text-neonYellow font-black font-orbitron text-base mb-1">Tıklama Qıfıllıdır!</h3>
+                    <p class="text-xs text-gray-300 mb-3 px-2">Qazanmağa başlamaq üçün ilk növbədə "Paketlər" bölməsindən bir paket aktivləşdirin.</p>
+                    <button onclick="switchTab('packages')" class="bg-gradient-to-r from-neonYellow to-yellow-500 text-black font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-glowBtn uppercase tracking-wider hover:scale-105 active:scale-95 transition">
+                        <i class="fa-solid fa-box-open mr-1"></i> Paketlərə Keç
+                    </button>
+                </div>
+
+                <!-- Interactive Sponge Tapper Button -->
+                <button id="tapper-btn" class="sponge-coin-btn relative w-56 h-56 rounded-full bg-gradient-to-b from-yellow-300 via-neonYellow to-amber-500 p-3 shadow-neonY border-4 border-yellow-100 flex items-center justify-center focus:outline-none">
+                    <div class="w-full h-full rounded-full bg-spongeBg border-2 border-neonYellow flex flex-col items-center justify-center overflow-hidden relative group">
+                        <img id="tapper-image" src="Neon SungerBOB Pul Tacı.png" onerror="this.src='https://placehold.co/200x200/ffe600/000000?text=SpongeBob'" class="w-40 h-40 object-cover rounded-full pointer-events-none transform group-hover:scale-105 transition">
+                        <div class="absolute bottom-2 bg-black/70 px-3 py-0.5 rounded-full border border-neonYellow text-[11px] font-bold text-neonYellow">
+                            TIKLA!
+                        </div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Active Package Info -->
+            <div class="bg-spongeCard/60 p-3 rounded-xl border border-neonCyan/20 text-center text-xs">
+                <span class="text-gray-300">Aktiv Paket: </span>
+                <span id="active-pkg-name" class="font-bold text-neonCyan">Paket Yoxdur</span>
+            </div>
+        </section>
+
+        <!-- TAB 2: PAKETLƏR (VIP PACKAGES) -->
+        <section id="tab-packages" class="tab-page hidden space-y-3">
+            <div class="text-center mb-2">
+                <h2 class="text-lg font-black font-orbitron text-neonYellow glow-text-yellow">VIP Qazanc Paketləri</h2>
+                <p class="text-xs text-gray-300">Büdcənizə uyğun paketi seçin və gəlirinizi artırın!</p>
+            </div>
+
+            <!-- Package 1: 2 AZN -->
+            <div class="bg-spongeCard p-4 rounded-2xl border-2 border-neonYellow/50 shadow-neonY flex flex-col justify-between relative overflow-hidden">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="bg-neonYellow text-black font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase">BAŞLANĞIC</span>
+                        <h3 class="text-base font-bold text-white mt-1">2 AZN Paketi</h3>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-black text-neonYellow font-orbitron">2.00 AZN</div>
+                    </div>
+                </div>
+                <ul class="text-xs text-gray-300 space-y-1.5 my-3 border-y border-gray-800 py-2">
+                    <li class="flex items-center"><i class="fa-solid fa-check text-neonGreen mr-2"></i>Günlük tıklama: <strong class="text-white ml-1">5,000 tik</strong></li>
+                    <li class="flex items-center"><i class="fa-solid fa-check text-neonGreen mr-2"></i>Hər tıklama başına: <strong class="text-neonYellow ml-1">0.00010 AZN</strong></li>
+                    <li class="flex items-center"><i class="fa-solid fa-check text-neonGreen mr-2"></i>Limit yenilənməsi: <strong class="text-white ml-1">24 Saatda bir</strong></li>
+                </ul>
+                <button onclick="buyPackage(2, 5000, 0.00010, '2 AZN Paketi')" class="w-full bg-gradient-to-r from-neonYellow to-yellow-500 text-black font-black text-xs py-2.5 rounded-xl shadow-glowBtn uppercase hover:brightness-110 active:scale-98 transition">
+                    <i class="fa-solid fa-cart-shopping mr-1"></i> DEPOZİT ET / SATIN AL
+                </button>
+            </div>
+
+            <!-- Package 2: 5 AZN -->
+            <div class="bg-spongeCard p-4 rounded-2xl border-2 border-neonCyan/50 shadow-neonC flex flex-col justify-between relative overflow-hidden">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="bg-neonCyan text-black font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase">MƏŞHUR</span>
+                        <h3 class="text-base font-bold text-white mt-1">5 AZN Paketi</h3>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-black text-neonCyan font-orbitron">5.00 AZN</div>
+                    </div>
+                </div>
+                <ul class="text-xs text-gray-300 space-y-1.5 my-3 border-y border-gray-800 py-2">
+                    <li class="flex items-center"><i class="fa-solid fa-check text-neonGreen mr-2"></i>Günlük tıklama: <strong class="text-white ml-1">10,000 tik</strong></li>
+                    <li class="flex items-center"><i class="fa-solid fa-check text-neonGreen mr-2"></i>Hər tıklama başına: <strong class="text-neonCyan ml-1">0.00020 AZN</strong></li>
+                    <li class="flex items-center"><i class="fa-solid fa-check text-neonGreen mr-2"></i>Limit yenilənməsi: <strong class="text-white ml-1">24 Saatda bir</strong></li>
+                </ul>
+                <button onclick="buyPackage(5, 10000, 0.00020, '5 AZN Paketi')" class="w-full bg-gradient-to-r from-neonCyan to-blue-500 text-black font-black text-xs py-2.5 rounded-xl shadow-neonC uppercase hover:brightness-110 active:scale-98 transition">
+                    <i class="fa-solid fa-cart-shopping mr-1"></i> DEPOZİT ET / SATIN AL
+                </button>
+            </div>
+
+            <!-- Package 3: 10 AZN -->
+            <div class="bg-spongeCard p-4 rounded-2xl border-2 border-neonPink/50 shadow-neonP flex flex-col justify-between relative overflow-hidden">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="bg-neonPink text-white font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase">PREMİUM</span>
+                        <h3 class="text-base font-bold text-white mt-1">10 AZN Paketi</h3>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-black text-neonPink font-orbitron">10.00 AZN</div>
+                    </div>
+                </div>
+                <ul class="text-xs text-gray-300 space-y-1.5 my-3 border-y border-gray-800 py-2">
+                    <li class="flex items-center"><i class="fa-solid fa-check text-neonGreen mr-2"></i>Günlük tıklama: <strong class="text-white ml-1">20,000 tik</strong></li>
+                    <li class="flex items-center"><i class="fa-solid fa-check text-neonGreen mr-2"></i>Hər tıklama başına: <strong class="text-neonPink ml-1">0.00029 AZN</strong></li>
+                    <li class="flex items-center"><i class="fa-solid fa-check text-neonGreen mr-2"></i>Limit yenilənməsi: <strong class="text-white ml-1">24 Saatda bir</strong></li>
+                </ul>
+                <button onclick="buyPackage(10, 20000, 0.00029, '10 AZN Paketi')" class="w-full bg-gradient-to-r from-neonPink to-purple-600 text-white font-black text-xs py-2.5 rounded-xl shadow-neonP uppercase hover:brightness-110 active:scale-98 transition">
+                    <i class="fa-solid fa-cart-shopping mr-1"></i> DEPOZİT ET / SATIN AL
+                </button>
+            </div>
+        </section>
+
+        <!-- TAB 3: TAPŞIRIQLAR (TASKS) -->
+        <section id="tab-tasks" class="tab-page hidden space-y-3">
+            <div class="text-center mb-2">
+                <h2 class="text-lg font-black font-orbitron text-neonCyan glow-text-cyan">Tapşırıqlar Və Mükafatlar</h2>
+                <p class="text-xs text-gray-300">Sosial media tapşırıqlarını yerinə yetirərək əlavə pul qazanın!</p>
+            </div>
+
+            <!-- Dynamic Task Container -->
+            <div id="tasks-container" class="space-y-2.5">
+                <!-- Task Items Rendered via JS -->
+            </div>
+        </section>
+
+        <!-- TAB 4: REFERAL & PROFİL -->
+        <section id="tab-referral" class="tab-page hidden space-y-4">
+            <div class="text-center">
+                <h2 class="text-lg font-black font-orbitron text-neonYellow glow-text-yellow">Dostunu Dəvət Et, 50% Qazan!</h2>
+                <p class="text-xs text-gray-300 mt-1">Dəvət etdiyiniz şəxs hər hansı paket aldıqda, paketin dəyərinin <strong class="text-neonYellow font-bold">50%-i (yarı qiyməti)</strong> anında balansınıza əlavə olunur!</p>
+            </div>
+
+            <!-- Referral Link Box -->
+            <div class="bg-spongeCard p-4 rounded-2xl border border-neonYellow/40 space-y-3">
+                <label class="text-xs text-gray-300 font-semibold block">Sizin Xüsusi Referal Keçidiniz:</label>
+                <div class="flex items-center space-x-2">
+                    <input id="ref-link-input" type="text" readonly value="https://t.me/sungermoneybot?start=123456" class="w-full bg-gray-900 border border-neonYellow/30 text-neonYellow font-mono text-xs p-2.5 rounded-xl focus:outline-none truncate">
+                    <button onclick="copyReferralLink()" class="bg-neonYellow text-black font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-glowBtn whitespace-nowrap hover:bg-yellow-300 transition">
+                        <i class="fa-solid fa-copy mr-1"></i> Kopyala
+                    </button>
+                </div>
+            </div>
+
+            <!-- Referral Stats -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-spongeCard p-3 rounded-xl border border-neonCyan/30 text-center">
+                    <div class="text-2xl font-black text-neonCyan font-orbitron" id="ref-count-display">0</div>
+                    <div class="text-[10px] text-gray-400 font-semibold uppercase mt-1">Gətirdiyiniz Adam</div>
+                </div>
+                <div class="bg-spongeCard p-3 rounded-xl border border-neonGreen/30 text-center">
+                    <div class="text-2xl font-black text-neonGreen font-orbitron" id="ref-earned-display">0.00</div>
+                    <div class="text-[10px] text-gray-400 font-semibold uppercase mt-1">Referal Qazancı (AZN)</div>
+                </div>
+            </div>
+
+            <!-- Bot Button -->
+            <a href="https://t.me/sungermoneybot" target="_blank" class="block w-full text-center bg-gradient-to-r from-blue-600 to-neonCyan text-black font-black text-xs py-3 rounded-xl shadow-neonC uppercase tracking-wider">
+                <i class="fa-paper-plane fa-solid mr-1"></i> Telegram Botuna Keç (@sungermoneybot)
+            </a>
+        </section>
+
+        <!-- TAB 5: ÇIXARIŞ (WITHDRAWAL) -->
+        <section id="tab-withdraw" class="tab-page hidden space-y-4">
+            <div class="text-center">
+                <h2 class="text-lg font-black font-orbitron text-neonPink glow-text-pink">Pul Çıxarışı</h2>
+                <p class="text-xs text-gray-300">Minimum çıxarış məbləği: <strong class="text-neonYellow">15.00 AZN</strong></p>
+            </div>
+
+            <div class="bg-spongeCard p-4 rounded-2xl border border-neonPink/30 space-y-3">
+                <div class="flex rounded-xl bg-gray-900 p-1 border border-gray-800">
+                    <button id="withdraw-tab-card" onclick="setWithdrawMethod('card')" class="flex-1 py-2 rounded-lg text-xs font-bold transition bg-neonPink text-white shadow-neonP">
+                        <i class="fa-solid fa-credit-card mr-1"></i> Bank Kartı
+                    </button>
+                    <button id="withdraw-tab-m10" onclick="setWithdrawMethod('m10')" class="flex-1 py-2 rounded-lg text-xs font-bold transition text-gray-400 hover:text-white">
+                        <i class="fa-solid fa-mobile-screen-button mr-1"></i> m10
+                    </button>
+                </div>
+
+                <form id="withdraw-form" onsubmit="handleWithdrawSubmit(event)" class="space-y-3 pt-1">
+                    <div>
+                        <label class="text-[11px] text-gray-300 mb-1 block">Çıxarış Məbləği (AZN):</label>
+                        <input id="withdraw-amount" type="number" step="0.01" min="15" placeholder="Min 15 AZN" required class="w-full bg-gray-900 border border-gray-700 text-neonYellow font-orbitron text-sm p-2.5 rounded-xl focus:border-neonPink focus:outline-none">
+                    </div>
+
+                    <!-- Bank Card Fields -->
+                    <div id="method-card-fields" class="space-y-3">
+                        <div>
+                            <label class="text-[11px] text-gray-300 mb-1 block">Bank Adı:</label>
+                            <select id="withdraw-bank-name" class="w-full bg-gray-900 border border-gray-700 text-white text-xs p-2.5 rounded-xl focus:border-neonPink focus:outline-none">
+                                <option value="Leobank">Leobank</option>
+                                <option value="Kapital Bank (Birbank)">Kapital Bank (Birbank)</option>
+                                <option value="ABB">ABB (Beynəlxalq Bank)</option>
+                                <option value="Unibank">Unibank</option>
+                                <option value="AccessBank">AccessBank</option>
+                                <option value="Digər Bank">Digər Bank</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[11px] text-gray-300 mb-1 block">16 Rəqəmli Kart Nömrəsi:</label>
+                            <input id="withdraw-card-num" type="text" maxlength="16" placeholder="4127000000000000" class="w-full bg-gray-900 border border-gray-700 text-white font-mono text-xs p-2.5 rounded-xl focus:border-neonPink focus:outline-none tracking-widest">
+                        </div>
+                    </div>
+
+                    <!-- m10 Fields -->
+                    <div id="method-m10-fields" class="space-y-3 hidden">
+                        <div>
+                            <label class="text-[11px] text-gray-300 mb-1 block">m10 Mobil Operator Kodu & Nömrə:</label>
+                            <div class="flex space-x-2">
+                                <select id="withdraw-m10-prefix" class="bg-gray-900 border border-gray-700 text-neonCyan font-bold text-xs p-2.5 rounded-xl focus:outline-none">
+                                    <option value="077">077</option>
+                                    <option value="070">070</option>
+                                    <option value="055">055</option>
+                                    <option value="050">050</option>
+                                    <option value="051">051</option>
+                                    <option value="099">099</option>
+                                    <option value="010">010</option>
+                                </select>
+                                <input id="withdraw-m10-num" type="text" maxlength="7" placeholder="1234567 (xxx xx xx)" class="flex-1 bg-gray-900 border border-gray-700 text-white font-mono text-xs p-2.5 rounded-xl focus:border-neonPink focus:outline-none tracking-wider">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-gradient-to-r from-neonPink to-purple-600 text-white font-black text-xs py-3 rounded-xl shadow-neonP uppercase hover:brightness-110 active:scale-98 transition">
+                        <i class="fa-solid fa-paper-plane mr-1"></i> Çıxarış Sorğusu Göndər
+                    </button>
+                </form>
+            </div>
+
+            <!-- Withdrawal History -->
+            <div class="bg-spongeCard p-4 rounded-2xl border border-gray-800 space-y-2">
+                <h3 class="text-xs font-bold text-gray-300 uppercase tracking-wider mb-2"><i class="fa-solid fa-clock-rotate-left text-neonCyan mr-1"></i> Çıxarış Tarixçəsi</h3>
+                <div id="withdraw-history-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    <div class="text-center text-gray-500 text-xs py-2">Hələ heç bir çıxarış yoxdur.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER INFO SECTION -->
+        <footer class="mt-8 mb-4 p-4 bg-spongeCard/40 rounded-2xl border border-neonCyan/20 text-xs text-gray-300 space-y-2">
+            <h4 class="font-bold text-neonYellow flex items-center gap-1 font-orbitron">
+                <i class="fa-solid fa-circle-info text-neonCyan"></i> @sungermoneybot Haqqında Məlumat
+            </h4>
+            <p class="text-[11px] leading-relaxed text-gray-400">
+                SüngerBOB Pul Tacı Telegram platformasında fəaliyyət göstərən premium qazanc simulyasiya app-idir. İstifadəçilər VIP paketlər alaraq hər gün tıklama limiti əldə edir və tıkladıqca real AZN balansı toplayırlar.
+            </p>
+            <p class="text-[11px] leading-relaxed text-gray-400">
+                Gətirdiyiniz hər bir aktiv referal sizə dəvət olunan şəxsin aldığı paketin 50%-i qədər xalis gəlir gətirir. Qazanılan vəsaitləri minimum 15 AZN-ə çatdıqda m10 və ya yerli Bank Kartlarınıza maneəsiz çıxara bilərsiniz.
+            </p>
+        </footer>
+    </div>
+
+    <!-- BOTTOM NAVIGATION BAR -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 bg-spongeCard/95 backdrop-blur-lg border-t border-neonCyan/30 px-2 py-2 max-w-md mx-auto">
+        <div class="flex justify-around items-center">
+            <button onclick="switchTab('main')" id="nav-main" class="nav-btn flex flex-col items-center text-neonYellow">
+                <i class="fa-solid fa-hand-pointer text-lg"></i>
+                <span class="text-[10px] font-bold mt-0.5">Əsas</span>
+            </button>
+            <button onclick="switchTab('packages')" id="nav-packages" class="nav-btn flex flex-col items-center text-gray-400 hover:text-white">
+                <i class="fa-solid fa-box-open text-lg"></i>
+                <span class="text-[10px] font-bold mt-0.5">Paketlər</span>
+            </button>
+            <button onclick="switchTab('tasks')" id="nav-tasks" class="nav-btn flex flex-col items-center text-gray-400 hover:text-white">
+                <i class="fa-solid fa-list-check text-lg"></i>
+                <span class="text-[10px] font-bold mt-0.5">Tapşırıqlar</span>
+            </button>
+            <button onclick="switchTab('referral')" id="nav-referral" class="nav-btn flex flex-col items-center text-gray-400 hover:text-white">
+                <i class="fa-solid fa-users text-lg"></i>
+                <span class="text-[10px] font-bold mt-0.5">Referal</span>
+            </button>
+            <button onclick="switchTab('withdraw')" id="nav-withdraw" class="nav-btn flex flex-col items-center text-gray-400 hover:text-white">
+                <i class="fa-solid fa-wallet text-lg"></i>
+                <span class="text-[10px] font-bold mt-0.5">Çıxarış</span>
+            </button>
+            <button onclick="openAdminModal()" class="nav-btn flex flex-col items-center text-neonPink opacity-80 hover:opacity-100">
+                <i class="fa-solid fa-user-shield text-lg"></i>
+                <span class="text-[10px] font-bold mt-0.5">Admin</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MODALS -->
+
+    <!-- MODAL 1: DEPOSIT / CONTACT ADMIN -->
+    <div id="deposit-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-spongeCard border-2 border-neonYellow rounded-2xl p-5 w-full max-w-sm text-center shadow-neonY space-y-4 relative">
+            <button onclick="closeModal('deposit-modal')" class="absolute top-3 right-3 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="w-12 h-12 bg-neonYellow/20 rounded-full border border-neonYellow flex items-center justify-center mx-auto text-neonYellow text-xl">
+                <i class="fa-solid fa-headset"></i>
+            </div>
+            <h3 class="text-base font-bold text-white font-orbitron" id="dep-modal-title">Paket Satın Al</h3>
+            <p class="text-xs text-gray-300" id="dep-modal-desc">Paketi aktivləşdirmək üçün xahiş olunur Adminlə əlaqə saxlayın.</p>
+            <a href="https://t.me/sungeradmin" target="_blank" class="block w-full bg-gradient-to-r from-neonYellow to-yellow-500 text-black font-black text-xs py-3 rounded-xl shadow-glowBtn uppercase tracking-wider">
+                <i class="fa-paper-plane fa-solid mr-1"></i> Adminlə Əlaqə Saxla (@sungeradmin)
+            </a>
+        </div>
+    </div>
+
+    <!-- MODAL 2: CHANGE AVATAR -->
+    <div id="avatar-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-spongeCard border-2 border-neonCyan rounded-2xl p-5 w-full max-w-sm text-center shadow-neonC space-y-4 relative">
+            <button onclick="closeModal('avatar-modal')" class="absolute top-3 right-3 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 class="text-base font-bold text-neonCyan font-orbitron">Profil Şəklini Dəyiş</h3>
+            <div class="grid grid-cols-3 gap-3 my-2">
+                <img onclick="selectAvatar('Neon SungerBOB Pul Tacı.png')" src="Neon SungerBOB Pul Tacı.png" onerror="this.src='https://placehold.co/100x100/ffe600/000000?text=Bob1'" class="w-16 h-16 rounded-full border-2 border-neonYellow mx-auto cursor-pointer hover:scale-110 transition">
+                <img onclick="selectAvatar('https://placehold.co/100x100/00f3ff/000000?text=Bob2')" src="https://placehold.co/100x100/00f3ff/000000?text=Bob2" class="w-16 h-16 rounded-full border-2 border-neonCyan mx-auto cursor-pointer hover:scale-110 transition">
+                <img onclick="selectAvatar('https://placehold.co/100x100/ff007f/000000?text=Bob3')" src="https://placehold.co/100x100/ff007f/000000?text=Bob3" class="w-16 h-16 rounded-full border-2 border-neonPink mx-auto cursor-pointer hover:scale-110 transition">
+            </div>
+            <div>
+                <label class="text-[11px] text-gray-400 block mb-1">Və ya Şəkil URL-i daxil edin:</label>
+                <input id="custom-avatar-url" type="text" placeholder="https://..." class="w-full bg-gray-900 border border-gray-700 text-xs text-white p-2 rounded-lg mb-2 focus:outline-none">
+                <button onclick="saveCustomAvatar()" class="w-full bg-neonCyan text-black font-bold text-xs py-2 rounded-lg">Yadda Saxla</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: ADMIN LOGIN MODAL -->
+    <div id="admin-login-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-spongeCard border-2 border-neonPink rounded-2xl p-5 w-full max-w-sm text-center shadow-neonP space-y-4 relative">
+            <button onclick="closeModal('admin-login-modal')" class="absolute top-3 right-3 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="w-12 h-12 bg-neonPink/20 rounded-full border border-neonPink flex items-center justify-center mx-auto text-neonPink text-xl">
+                <i class="fa-solid fa-user-lock"></i>
+            </div>
+            <h3 class="text-base font-bold text-neonPink font-orbitron">Admin Girişi</h3>
+            <form onsubmit="handleAdminLogin(event)" class="space-y-3">
+                <input id="admin-login-username" type="text" placeholder="İstifadəçi adı" required class="w-full bg-gray-900 border border-gray-700 text-white text-xs p-2.5 rounded-xl focus:border-neonPink focus:outline-none">
+                <input id="admin-login-password" type="password" placeholder="Şifrə" required class="w-full bg-gray-900 border border-gray-700 text-white text-xs p-2.5 rounded-xl focus:border-neonPink focus:outline-none">
+                <button type="submit" class="w-full bg-neonPink text-white font-black text-xs py-2.5 rounded-xl uppercase tracking-wider">Daxil Ol</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: FULL ADMIN PANEL UI -->
+    <div id="admin-panel-modal" class="fixed inset-0 z-50 bg-spongeBg hidden flex flex-col overflow-y-auto">
+        <div class="bg-spongeCard p-4 border-b border-neonPink flex justify-between items-center sticky top-0 z-10">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-shield-halved text-neonPink text-xl"></i>
+                <h2 class="text-sm font-black font-orbitron text-neonPink">ADMIN CONTROL PANEL</h2>
+            </div>
+            <button onclick="closeModal('admin-panel-modal')" class="bg-red-600/30 text-red-400 border border-red-500/50 px-3 py-1 rounded-lg text-xs font-bold">
+                <i class="fa-solid fa-right-from-bracket mr-1"></i> Çıxış
+            </button>
+        </div>
+
+        <div class="p-4 space-y-6 max-w-2xl mx-auto w-full">
+            
+            <!-- ADMIN 1: ADD TASK -->
+            <div class="bg-spongeCard p-4 rounded-2xl border border-neonCyan/30 space-y-3">
+                <h3 class="text-xs font-bold text-neonCyan uppercase font-orbitron"><i class="fa-solid fa-plus-circle mr-1"></i> Yeni Tapşırıq Əlavə Et</h3>
+                <form onsubmit="adminAddTask(event)" class="space-y-2">
+                    <input id="admin-task-title" type="text" placeholder="Tapşırıq Başlığı (məs: Instagram izlə)" required class="w-full bg-gray-900 border border-gray-700 text-xs p-2 rounded-lg text-white">
+                    <input id="admin-task-link" type="url" placeholder="Tapşırıq Linki (https://...)" required class="w-full bg-gray-900 border border-gray-700 text-xs p-2 rounded-lg text-white">
+                    <input id="admin-task-reward" type="number" step="0.01" placeholder="Mükafat AZN (məs: 0.10)" required class="w-full bg-gray-900 border border-gray-700 text-xs p-2 rounded-lg text-white">
+                    <button type="submit" class="w-full bg-neonCyan text-black font-bold text-xs py-2 rounded-lg uppercase">Tapşırığı Yayımla</button>
+                </form>
+            </div>
+
+            <!-- ADMIN 2: PENDING WITHDRAWALS -->
+            <div class="bg-spongeCard p-4 rounded-2xl border border-neonYellow/30 space-y-3">
+                <h3 class="text-xs font-bold text-neonYellow uppercase font-orbitron"><i class="fa-solid fa-money-bill-transfer mr-1"></i> Çıxarış Sorğuları</h3>
+                <div id="admin-withdrawals-list" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
+            </div>
+
+            <!-- ADMIN 3: USER MANAGEMENT -->
+            <div class="bg-spongeCard p-4 rounded-2xl border border-neonPink/30 space-y-3">
+                <h3 class="text-xs font-bold text-neonPink uppercase font-orbitron"><i class="fa-solid fa-users-gear mr-1"></i> İstifadəçilərin İdarə Olunması</h3>
+                <div id="admin-users-list" class="space-y-3 max-h-80 overflow-y-auto pr-1"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- APP SCRIPT LOGIC -->
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://gamebazar-8fc97-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        };
+        
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+        } catch(e) {
+            console.warn("Firebase initialized in local fallback mode:", e);
+        }
+
+        const tg = window.Telegram?.WebApp;
+        if (tg) { tg.expand(); tg.ready(); }
+
+        const tgUser = tg?.initDataUnsafe?.user;
+        const currentUserId = tgUser?.id ? String(tgUser.id) : (localStorage.getItem('sunger_uid') || String(Math.floor(10000000 + Math.random() * 90000000)));
+        localStorage.setItem('sunger_uid', currentUserId);
+
+        const currentUserName = tgUser?.first_name ? (tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '')) : "İstifadəçi_" + currentUserId.slice(-4);
+
+        let currentUserData = {
+            id: currentUserId,
+            name: currentUserName,
+            balance: 0.00000,
+            avatar: "Neon SungerBOB Pul Tacı.png",
+            package: null,
+            clicksToday: 0,
+            lastClickReset: Date.now(),
+            referredBy: null,
+            referralsCount: 0,
+            referralEarned: 0.00,
+            isBanned: false,
+            completedTasks: []
+        };
+
+        let currentWithdrawMethod = 'card';
+
+        window.addEventListener('load', () => {
+            const splashBar = document.getElementById('splash-bar');
+            setTimeout(() => { if (splashBar) splashBar.style.width = '100%'; }, 100);
+
+            createBubbles();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const refCode = urlParams.get('start') || urlParams.get('ref');
+            if (refCode && refCode !== currentUserId) {
+                currentUserData.referredBy = refCode;
+            }
+
+            syncUserWithDB(() => {
+                setTimeout(() => {
+                    const splash = document.getElementById('splash-screen');
+                    const app = document.getElementById('app-content');
+                    if (splash) splash.classList.add('opacity-0');
+                    setTimeout(() => {
+                        if (splash) splash.classList.add('hidden');
+                        if (app) app.classList.remove('hidden');
+                    }, 700);
+                }, 1500);
+            });
+
+            startLiveTicker();
+            setupTapperEvents();
+            loadTasks();
+            loadWithdrawHistory();
+        });
+
+        function createBubbles() {
+            const container = document.getElementById('bubble-container');
+            if (!container) return;
+            for (let i = 0; i < 15; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                const size = Math.random() * 20 + 8;
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                bubble.style.left = `${Math.random() * 100}%`;
+                bubble.style.animationDuration = `${Math.random() * 8 + 6}s`;
+                bubble.style.animationDelay = `${Math.random() * 5}s`;
+                container.appendChild(bubble);
+            }
+        }
+
+        function syncUserWithDB(callback) {
+            document.getElementById('user-id-display').innerText = currentUserId;
+            document.getElementById('user-display-name').innerText = currentUserData.name;
+            document.getElementById('ref-link-input').value = `https://t.me/sungermoneybot?start=${currentUserId}`;
+
+            if (db) {
+                const userRef = db.ref('users/' + currentUserId);
+                userRef.on('value', (snapshot) => {
+                    const val = snapshot.val();
+                    if (val) {
+                        currentUserData = { ...currentUserData, ...val };
+                    } else {
+                        userRef.set(currentUserData);
+                    }
+                    updateUIState();
+                    if (callback) callback();
+                });
+            } else {
+                const localSaved = localStorage.getItem('sunger_user_' + currentUserId);
+                if (localSaved) currentUserData = JSON.parse(localSaved);
+                updateUIState();
+                if (callback) callback();
+            }
+        }
+
+        function saveUserData() {
+            if (db) {
+                db.ref('users/' + currentUserId).update(currentUserData);
+            }
+            localStorage.setItem('sunger_user_' + currentUserId, JSON.stringify(currentUserData));
+            updateUIState();
+        }
+
+        function updateUIState() {
+            if (currentUserData.isBanned) {
+                showToast("Hesabınız banlanıb! Növbəti əməliyyatlar məhdudlaşdırılıb.");
+            }
+
+            document.getElementById('user-balance').innerText = (currentUserData.balance || 0).toFixed(5);
+            
+            if (currentUserData.avatar) {
+                document.getElementById('header-avatar').src = currentUserData.avatar;
+            }
+
+            const lockedOverlay = document.getElementById('tapper-locked-overlay');
+            const pkgBadge = document.getElementById('user-vip-badge');
+            const activePkgName = document.getElementById('active-pkg-name');
+            const perClickDisplay = document.getElementById('per-click-earning');
+            const clicksTodayDisplay = document.getElementById('clicks-today');
+            const maxClicksDisplay = document.getElementById('max-clicks');
+            const progressBar = document.getElementById('click-progress-bar');
+
+            const now = Date.now();
+            if (!currentUserData.lastClickReset || (now - currentUserData.lastClickReset) > 24 * 60 * 60 * 1000) {
+                currentUserData.clicksToday = 0;
+                currentUserData.lastClickReset = now;
+                saveUserData();
+            }
+
+            if (currentUserData.package) {
+                lockedOverlay.classList.add('hidden');
+                pkgBadge.innerText = currentUserData.package.name.toUpperCase();
+                pkgBadge.className = "bg-neonYellow text-black font-black text-[9px] px-1.5 py-0.5 rounded";
+                activePkgName.innerText = currentUserData.package.name;
+                perClickDisplay.innerText = currentUserData.package.perClick.toFixed(5) + ' AZN';
+                
+                clicksTodayDisplay.innerText = currentUserData.clicksToday || 0;
+                maxClicksDisplay.innerText = currentUserData.package.clickLimit || 0;
+
+                const pct = Math.min(100, ((currentUserData.clicksToday || 0) / currentUserData.package.clickLimit) * 100);
+                progressBar.style.width = `${pct}%`;
+            } else {
+                lockedOverlay.classList.remove('hidden');
+                pkgBadge.innerText = "PULSUZ";
+                pkgBadge.className = "bg-gray-800 text-gray-400 text-[9px] px-1.5 py-0.5 rounded";
+                activePkgName.innerText = "Aktiv Paket Yoxdur";
+                perClickDisplay.innerText = "0.00000 AZN";
+                clicksTodayDisplay.innerText = "0";
+                maxClicksDisplay.innerText = "0";
+                progressBar.style.width = '0%';
+            }
+
+            document.getElementById('ref-count-display').innerText = currentUserData.referralsCount || 0;
+            document.getElementById('ref-earned-display').innerText = (currentUserData.referralEarned || 0).toFixed(2);
+        }
+
+        function setupTapperEvents() {
+            const btn = document.getElementById('tapper-btn');
+            if (!btn) return;
+
+            btn.addEventListener('click', (e) => {
+                if (!currentUserData.package) {
+                    showToast("Tıklamaq üçün əvvəlcə paket almalısınız!");
+                    return;
+                }
+
+                if (currentUserData.isBanned) {
+                    showToast("Hesabınız ban olunub!");
+                    return;
+                }
+
+                if (currentUserData.clicksToday >= currentUserData.package.clickLimit) {
+                    showToast("Günlük tıklama limitiniz dolub! 24 saat sonra yenidən cəhd edin.");
+                    return;
+                }
+
+                currentUserData.clicksToday = (currentUserData.clicksToday || 0) + 1;
+                currentUserData.balance = (currentUserData.balance || 0) + currentUserData.package.perClick;
+
+                saveUserData();
+                createFloatingText(e, `+${currentUserData.package.perClick.toFixed(5)} AZN`);
+            });
+        }
+
+        function createFloatingText(e, text) {
+            const floatEl = document.createElement('div');
+            floatEl.className = 'tap-float-text';
+            floatEl.innerText = text;
+
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = (e.clientX || (rect.left + rect.width / 2)) - 30;
+            const y = (e.clientY || (rect.top + rect.height / 2)) - 20;
+
+            floatEl.style.left = `${x}px`;
+            floatEl.style.top = `${y}px`;
+
+            document.body.appendChild(floatEl);
+            setTimeout(() => floatEl.remove(), 800);
+        }
+
+        function buyPackage(price, limit, perClick, pkgName) {
+            document.getElementById('dep-modal-title').innerText = `${pkgName} Satın Al`;
+            document.getElementById('dep-modal-desc').innerHTML = `
+                Siz <strong>${pkgName} (${price} AZN)</strong> seçdiniz.<br>
+                Günlük limit: <strong>${limit.toLocaleString()} tik</strong><br>
+                Hər tik: <strong>${perClick.toFixed(5)} AZN</strong><br><br>
+                Ödəniş edib paketinizi aktivləşdirmək üçün admin ilə əlaqə saxlayın.
+            `;
+            openModal('deposit-modal');
+        }
+
+        function copyReferralLink() {
+            const linkInput = document.getElementById('ref-link-input');
+            linkInput.select();
+            document.execCommand('copy');
+            showToast("Referal linkiniz kopyalandı!");
+        }
+
+        const defaultTasks = [
+            { id: 'task_1', title: "Instagram Səhifəmizi İzlə", link: "https://instagram.com", reward: 0.20 },
+            { id: 'task_2', title: "Telegram Kanalımıza Qoşul", link: "https://t.me/sungermoneybot", reward: 0.30 },
+            { id: 'task_3', title: "TikTok Videosunu Bəyən", link: "https://tiktok.com", reward: 0.15 }
+        ];
+
+        function loadTasks() {
+            const container = document.getElementById('tasks-container');
+            if (!container) return;
+
+            if (db) {
+                db.ref('tasks').on('value', (snapshot) => {
+                    const tasksData = snapshot.val();
+                    const taskList = tasksData ? Object.values(tasksData) : defaultTasks;
+                    renderTaskList(taskList);
+                });
+            } else {
+                renderTaskList(defaultTasks);
+            }
+        }
+
+        function renderTaskList(taskList) {
+            const container = document.getElementById('tasks-container');
+            container.innerHTML = '';
+            const completed = currentUserData.completedTasks || [];
+
+            taskList.forEach(task => {
+                const isDone = completed.includes(task.id);
+                const taskCard = document.createElement('div');
+                taskCard.className = "bg-spongeCard p-3.5 rounded-2xl border border-gray-800 flex justify-between items-center";
+                taskCard.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-neonCyan/10 border border-neonCyan/30 flex items-center justify-center text-neonCyan text-lg">
+                            <i class="fa-solid fa-tasks"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-white">${task.title}</h4>
+                            <span class="text-[10px] text-neonGreen font-bold">+${parseFloat(task.reward).toFixed(2)} AZN</span>
+                        </div>
+                    </div>
+                    ${isDone ? `
+                        <span class="bg-gray-800 text-neonGreen text-[10px] font-bold px-3 py-1.5 rounded-xl border border-neonGreen/30">
+                            <i class="fa-solid fa-check mr-1"></i> İcra Edildi
+                        </span>
+                    ` : `
+                        <button onclick="doTask('${task.id}', '${task.link}', ${task.reward})" class="bg-gradient-to-r from-neonCyan to-blue-600 text-black font-extrabold text-[11px] px-3.5 py-1.5 rounded-xl shadow-neonC">
+                            Tapşırığa Get
+                        </button>
+                    `}
+                `;
+                container.appendChild(taskCard);
+            });
+        }
+
+        function doTask(taskId, link, reward) {
+            window.open(link, '_blank');
+            setTimeout(() => {
+                if (!currentUserData.completedTasks) currentUserData.completedTasks = [];
+                if (!currentUserData.completedTasks.includes(taskId)) {
+                    currentUserData.completedTasks.push(taskId);
+                    currentUserData.balance = (currentUserData.balance || 0) + parseFloat(reward);
+                    saveUserData();
+                    showToast(`Tapşırıq icra olundu! Balansınıza +${parseFloat(reward).toFixed(2)} AZN əlavə edildi.`);
+                    loadTasks();
+                }
+            }, 1000);
+        }
+
+        function setWithdrawMethod(method) {
+            currentWithdrawMethod = method;
+            const btnCard = document.getElementById('withdraw-tab-card');
+            const btnM10 = document.getElementById('withdraw-tab-m10');
+            const fieldsCard = document.getElementById('method-card-fields');
+            const fieldsM10 = document.getElementById('method-m10-fields');
+
+            if (method === 'card') {
+                btnCard.className = "flex-1 py-2 rounded-lg text-xs font-bold transition bg-neonPink text-white shadow-neonP";
+                btnM10.className = "flex-1 py-2 rounded-lg text-xs font-bold transition text-gray-400 hover:text-white";
+                fieldsCard.classList.remove('hidden');
+                fieldsM10.classList.add('hidden');
+            } else {
+                btnM10.className = "flex-1 py-2 rounded-lg text-xs font-bold transition bg-neonPink text-white shadow-neonP";
+                btnCard.className = "flex-1 py-2 rounded-lg text-xs font-bold transition text-gray-400 hover:text-white";
+                fieldsM10.classList.remove('hidden');
+                fieldsCard.classList.add('hidden');
+            }
+        }
+
+        function handleWithdrawSubmit(e) {
+            e.preventDefault();
+            const amount = parseFloat(document.getElementById('withdraw-amount').value);
+
+            if (isNaN(amount) || amount < 15.00) {
+                showToast("Minimum çıxarış məbləği 15.00 AZN-dir!");
+                return;
+            }
+
+            if (amount > currentUserData.balance) {
+                showToast("Balansınızda kifayət qədər vəsait yoxdur!");
+                return;
+            }
+
+            let destinationDetails = "";
+
+            if (currentWithdrawMethod === 'card') {
+                const bankName = document.getElementById('withdraw-bank-name').value;
+                const cardNum = document.getElementById('withdraw-card-num').value.trim();
+
+                if (!/^\d{16}$/.test(cardNum)) {
+                    showToast("Kart nömrəsi dəqiq 16 rəqəmdən ibarət olmalıdır!");
+                    return;
+                }
+                destinationDetails = `Bank: ${bankName} | Kart: ${cardNum}`;
+            } else {
+                const prefix = document.getElementById('withdraw-m10-prefix').value;
+                const num = document.getElementById('withdraw-m10-num').value.trim();
+
+                if (!/^\d{7}$/.test(num)) {
+                    showToast("m10 nömrəsi üçün qalan 7 rəqəmi dəqiq daxil edin!");
+                    return;
+                }
+                destinationDetails = `m10: ${prefix} ${num.slice(0,3)} ${num.slice(3,5)} ${num.slice(5,7)}`;
+            }
+
+            currentUserData.balance -= amount;
+            saveUserData();
+
+            const withdrawReq = {
+                id: 'w_' + Date.now(),
+                userId: currentUserId,
+                userName: currentUserData.name,
+                amount: amount,
+                details: destinationDetails,
+                status: 'Gözləmədədir',
+                date: new Date().toLocaleString('az-AZ')
+            };
+
+            if (db) {
+                db.ref('withdrawals/' + withdrawReq.id).set(withdrawReq);
+            } else {
+                const localHistory = JSON.parse(localStorage.getItem('sunger_withdrawals') || '[]');
+                localHistory.unshift(withdrawReq);
+                localStorage.setItem('sunger_withdrawals', JSON.stringify(localHistory));
+            }
+
+            showToast("Çıxarış sorğunuz uğurla göndərildi!");
+            document.getElementById('withdraw-form').reset();
+            loadWithdrawHistory();
+        }
+
+        function loadWithdrawHistory() {
+            const list = document.getElementById('withdraw-history-list');
+            if (!list) return;
+
+            const renderHistory = (items) => {
+                const userItems = items.filter(i => i.userId === currentUserId);
+                if (userItems.length === 0) {
+                    list.innerHTML = `<div class="text-center text-gray-500 text-xs py-2">Hələ heç bir çıxarış yoxdur.</div>`;
+                    return;
+                }
+                list.innerHTML = '';
+                userItems.forEach(item => {
+                    let statusBadge = "";
+                    if (item.status === 'Gözləmədədir') {
+                        statusBadge = `<span class="bg-yellow-500/20 text-neonYellow border border-neonYellow/40 text-[9px] px-2 py-0.5 rounded font-bold">Gözləmədədir</span>`;
+                    } else if (item.status === 'Pul göndərildi') {
+                        statusBadge = `<span class="bg-green-500/20 text-neonGreen border border-neonGreen/40 text-[9px] px-2 py-0.5 rounded font-bold">Pul göndərildi</span>`;
+                    } else {
+                        statusBadge = `<span class="bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] px-2 py-0.5 rounded font-bold">Ləğv edildi</span>`;
+                    }
+
+                    const div = document.createElement('div');
+                    div.className = "bg-gray-900/80 p-2.5 rounded-xl border border-gray-800 flex justify-between items-center text-xs";
+                    div.innerHTML = `
+                        <div>
+                            <div class="font-bold text-white">${item.amount.toFixed(2)} AZN</div>
+                            <div class="text-[10px] text-gray-400">${item.details}</div>
+                            <div class="text-[9px] text-gray-500">${item.date}</div>
+                        </div>
+                        <div>${statusBadge}</div>
+                    `;
+                    list.appendChild(div);
+                });
+            };
+
+            if (db) {
+                db.ref('withdrawals').on('value', (snapshot) => {
+                    const val = snapshot.val();
+                    renderHistory(val ? Object.values(val) : []);
+                });
+            } else {
+                const localHistory = JSON.parse(localStorage.getItem('sunger_withdrawals') || '[]');
+                renderHistory(localHistory);
+            }
+        }
+
+        const ADMIN_USER = "Escobar211_555";
+        const ADMIN_PASS = "AA211_700777";
+
+        function openAdminModal() { openModal('admin-login-modal'); }
+
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('admin-login-username').value.trim();
+            const p = document.getElementById('admin-login-password').value.trim();
+
+            if (u === ADMIN_USER && p === ADMIN_PASS) {
+                closeModal('admin-login-modal');
+                openModal('admin-panel-modal');
+                loadAdminData();
+                showToast("Admin panelinə xoş gəldiniz!");
+            } else {
+                showToast("Səhv admin login və ya şifrə!");
+            }
+        }
+
+        function loadAdminData() {
+            if (!db) return;
+
+            db.ref('withdrawals').on('value', (snap) => {
+                const wList = document.getElementById('admin-withdrawals-list');
+                const val = snap.val();
+                if (!val) {
+                    wList.innerHTML = `<div class="text-xs text-gray-400 text-center">Çıxarış sorğusu yoxdur.</div>`;
+                    return;
+                }
+                wList.innerHTML = '';
+                Object.values(val).forEach(w => {
+                    const card = document.createElement('div');
+                    card.className = "bg-gray-900 p-3 rounded-xl border border-gray-800 space-y-2 text-xs";
+                    card.innerHTML = `
+                        <div class="flex justify-between font-bold text-white">
+                            <span>${w.userName} (ID: ${w.userId})</span>
+                            <span class="text-neonYellow font-orbitron">${w.amount.toFixed(2)} AZN</span>
+                        </div>
+                        <div class="text-[10px] text-gray-300 font-mono">${w.details}</div>
+                        <div class="flex justify-between items-center pt-1 border-t border-gray-800">
+                            <span class="text-[9px] text-gray-500">${w.status}</span>
+                            ${w.status === 'Gözləmədədir' ? `
+                                <div class="space-x-1">
+                                    <button onclick="adminApproveWithdraw('${w.id}')" class="bg-neonGreen text-black font-bold text-[10px] px-2 py-1 rounded">Qəbul et</button>
+                                    <button onclick="adminRejectWithdraw('${w.id}', '${w.userId}', ${w.amount})" class="bg-red-600 text-white font-bold text-[10px] px-2 py-1 rounded">Ləğv et</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    wList.appendChild(card);
+                });
+            });
+
+            db.ref('users').on('value', (snap) => {
+                const uList = document.getElementById('admin-users-list');
+                const val = snap.val();
+                if (!val) return;
+                uList.innerHTML = '';
+                Object.values(val).forEach(usr => {
+                    const uCard = document.createElement('div');
+                    uCard.className = "bg-gray-900 p-3 rounded-xl border border-gray-800 space-y-2 text-xs";
+                    uCard.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-white">${usr.name} <span class="text-neonCyan text-[10px]">(ID: ${usr.id})</span></span>
+                            <span class="text-neonYellow font-mono">${(usr.balance || 0).toFixed(2)} AZN</span>
+                        </div>
+                        <div class="text-[10px] text-gray-400 flex justify-between">
+                            <span>Paket: ${usr.package ? usr.package.name : 'Yoxdur'}</span>
+                            <span>Gətirdiyi: ${usr.referralsCount || 0} nəfər</span>
+                        </div>
+                        <div class="flex space-x-1 pt-1">
+                            <button onclick="adminAdjustBalance('${usr.id}', 5)" class="flex-1 bg-neonGreen/20 text-neonGreen border border-neonGreen/40 text-[10px] py-1 rounded font-bold">+5 AZN</button>
+                            <button onclick="adminAdjustBalance('${usr.id}', -5)" class="flex-1 bg-red-500/20 text-red-400 border border-red-500/40 text-[10px] py-1 rounded font-bold">-5 AZN</button>
+                            ${usr.isBanned ? `
+                                <button onclick="adminSetBan('${usr.id}', false)" class="flex-1 bg-blue-600 text-white text-[10px] py-1 rounded font-bold">Ban Aç</button>
+                            ` : `
+                                <button onclick="adminSetBan('${usr.id}', true)" class="flex-1 bg-red-600 text-white text-[10px] py-1 rounded font-bold">Banla</button>
+                            `}
+                        </div>
+                    `;
+                    uList.appendChild(uCard);
+                });
+            });
+        }
+
+        function adminApproveWithdraw(withdrawId) {
+            if (db) db.ref('withdrawals/' + withdrawId).update({ status: 'Pul göndərildi' });
+            showToast("Çıxarış qəbul edildi!");
+        }
+
+        function adminRejectWithdraw(withdrawId, userId, amount) {
+            if (db) {
+                db.ref('users/' + userId + '/balance').transaction(b => (b || 0) + amount);
+                db.ref('withdrawals/' + withdrawId).update({ status: 'Ləğv edildi' });
+            }
+            showToast("Çıxarış ləğv edildi və pul istifadəçi balansına qaytarıldı!");
+        }
+
+        function adminAdjustBalance(userId, change) {
+            if (db) {
+                db.ref('users/' + userId + '/balance').transaction(b => Math.max(0, (b || 0) + change));
+            }
+        }
+
+        function adminSetBan(userId, status) {
+            if (db) {
+                db.ref('users/' + userId + '/isBanned').set(status);
+            }
+        }
+
+        function adminAddTask(e) {
+            e.preventDefault();
+            const title = document.getElementById('admin-task-title').value;
+            const link = document.getElementById('admin-task-link').value;
+            const reward = parseFloat(document.getElementById('admin-task-reward').value);
+
+            const newTask = { id: 'task_' + Date.now(), title: title, link: link, reward: reward };
+
+            if (db) db.ref('tasks/' + newTask.id).set(newTask);
+            showToast("Yeni tapşırıq yayımlandı!");
+            e.target.reset();
+        }
+
+        function startLiveTicker() {
+            const ticker = document.getElementById('live-activity-ticker');
+            const activeUsers = document.getElementById('active-users-count');
+
+            const sampleNames = ["Cavid", "Əli", "Rauf", "Leyla", "Aysel", "Nijat", "Tural", "Elvin", "Orxan", "Günel"];
+            const actions = [
+                { type: " çıxardı", min: 15, max: 50 },
+                { type: " depozit etdi", min: 2, max: 10 }
+            ];
+
+            setInterval(() => {
+                const randomUsers = 5000 + Math.floor(Math.random() * 300) - 150;
+                if (activeUsers) activeUsers.innerText = randomUsers.toLocaleString();
+
+                const name = sampleNames[Math.floor(Math.random() * sampleNames.length)];
+                const act = actions[Math.floor(Math.random() * actions.length)];
+                const amount = (Math.random() * (act.max - act.min) + act.min).toFixed(2);
+                
+                if (ticker) {
+                    ticker.innerText = `🔥 ${name} ${amount} AZN ${act.type}`;
+                }
+            }, 4000);
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-page').forEach(page => page.classList.add('hidden'));
+            const target = document.getElementById('tab-' + tabName);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-neonYellow');
+                btn.classList.add('text-gray-400');
+            });
+            const activeNav = document.getElementById('nav-' + tabName);
+            if (activeNav) {
+                activeNav.classList.remove('text-gray-400');
+                activeNav.classList.add('text-neonYellow');
+            }
+        }
+
+        function openModal(id) { const m = document.getElementById(id); if (m) m.classList.remove('hidden'); }
+        function closeModal(id) { const m = document.getElementById(id); if (m) m.classList.add('hidden'); }
+        function openAvatarModal() { openModal('avatar-modal'); }
+
+        function selectAvatar(url) {
+            currentUserData.avatar = url;
+            saveUserData();
+            closeModal('avatar-modal');
+            showToast("Profil avatarı yeniləndi!");
+        }
+
+        function saveCustomAvatar() {
+            const url = document.getElementById('custom-avatar-url').value.trim();
+            if (url) selectAvatar(url);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast-msg');
+            const txt = document.getElementById('toast-text');
+            if (toast && txt) {
+                txt.innerText = msg;
+                toast.classList.remove('hidden');
+                setTimeout(() => toast.classList.add('hidden'), 3500);
+            }
+        }
+
+        function closeToast() {
+            const toast = document.getElementById('toast-msg');
+            if (toast) toast.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
