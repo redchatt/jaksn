@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SüngerBOB Pul Tacı - Telegram Mini App</title>
+    <title>SüngerBOB Money - Telegram Mini App</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -461,10 +461,6 @@
                 <i class="fa-solid fa-wallet text-lg"></i>
                 <span class="text-[10px] font-bold mt-0.5">Çıxarış</span>
             </button>
-            <button onclick="openAdminModal()" class="nav-btn flex flex-col items-center text-neonPink opacity-80 hover:opacity-100">
-                <i class="fa-solid fa-user-shield text-lg"></i>
-                <span class="text-[10px] font-bold mt-0.5">Admin</span>
-            </button>
         </div>
     </nav>
 
@@ -500,62 +496,6 @@
                 <input id="custom-avatar-url" type="text" placeholder="https://..." class="w-full bg-gray-900 border border-gray-700 text-xs text-white p-2 rounded-lg mb-2 focus:outline-none">
                 <button onclick="saveCustomAvatar()" class="w-full bg-neonCyan text-black font-bold text-xs py-2 rounded-lg">Yadda Saxla</button>
             </div>
-        </div>
-    </div>
-
-    <!-- MODAL 3: ADMIN LOGIN MODAL -->
-    <div id="admin-login-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
-        <div class="bg-spongeCard border-2 border-neonPink rounded-2xl p-5 w-full max-w-sm text-center shadow-neonP space-y-4 relative">
-            <button onclick="closeModal('admin-login-modal')" class="absolute top-3 right-3 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            <div class="w-12 h-12 bg-neonPink/20 rounded-full border border-neonPink flex items-center justify-center mx-auto text-neonPink text-xl">
-                <i class="fa-solid fa-user-lock"></i>
-            </div>
-            <h3 class="text-base font-bold text-neonPink font-orbitron">Admin Girişi</h3>
-            <form onsubmit="handleAdminLogin(event)" class="space-y-3">
-                <input id="admin-login-username" type="text" placeholder="İstifadəçi adı" required class="w-full bg-gray-900 border border-gray-700 text-white text-xs p-2.5 rounded-xl focus:border-neonPink focus:outline-none">
-                <input id="admin-login-password" type="password" placeholder="Şifrə" required class="w-full bg-gray-900 border border-gray-700 text-white text-xs p-2.5 rounded-xl focus:border-neonPink focus:outline-none">
-                <button type="submit" class="w-full bg-neonPink text-white font-black text-xs py-2.5 rounded-xl uppercase tracking-wider">Daxil Ol</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL 4: FULL ADMIN PANEL UI -->
-    <div id="admin-panel-modal" class="fixed inset-0 z-50 bg-spongeBg hidden flex flex-col overflow-y-auto">
-        <div class="bg-spongeCard p-4 border-b border-neonPink flex justify-between items-center sticky top-0 z-10">
-            <div class="flex items-center space-x-2">
-                <i class="fa-solid fa-shield-halved text-neonPink text-xl"></i>
-                <h2 class="text-sm font-black font-orbitron text-neonPink">ADMIN CONTROL PANEL</h2>
-            </div>
-            <button onclick="closeModal('admin-panel-modal')" class="bg-red-600/30 text-red-400 border border-red-500/50 px-3 py-1 rounded-lg text-xs font-bold">
-                <i class="fa-solid fa-right-from-bracket mr-1"></i> Çıxış
-            </button>
-        </div>
-
-        <div class="p-4 space-y-6 max-w-2xl mx-auto w-full">
-            
-            <!-- ADMIN 1: ADD TASK -->
-            <div class="bg-spongeCard p-4 rounded-2xl border border-neonCyan/30 space-y-3">
-                <h3 class="text-xs font-bold text-neonCyan uppercase font-orbitron"><i class="fa-solid fa-plus-circle mr-1"></i> Yeni Tapşırıq Əlavə Et</h3>
-                <form onsubmit="adminAddTask(event)" class="space-y-2">
-                    <input id="admin-task-title" type="text" placeholder="Tapşırıq Başlığı (məs: Instagram izlə)" required class="w-full bg-gray-900 border border-gray-700 text-xs p-2 rounded-lg text-white">
-                    <input id="admin-task-link" type="url" placeholder="Tapşırıq Linki (https://...)" required class="w-full bg-gray-900 border border-gray-700 text-xs p-2 rounded-lg text-white">
-                    <input id="admin-task-reward" type="number" step="0.01" placeholder="Mükafat AZN (məs: 0.10)" required class="w-full bg-gray-900 border border-gray-700 text-xs p-2 rounded-lg text-white">
-                    <button type="submit" class="w-full bg-neonCyan text-black font-bold text-xs py-2 rounded-lg uppercase">Tapşırığı Yayımla</button>
-                </form>
-            </div>
-
-            <!-- ADMIN 2: PENDING WITHDRAWALS -->
-            <div class="bg-spongeCard p-4 rounded-2xl border border-neonYellow/30 space-y-3">
-                <h3 class="text-xs font-bold text-neonYellow uppercase font-orbitron"><i class="fa-solid fa-money-bill-transfer mr-1"></i> Çıxarış Sorğuları</h3>
-                <div id="admin-withdrawals-list" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
-            </div>
-
-            <!-- ADMIN 3: USER MANAGEMENT -->
-            <div class="bg-spongeCard p-4 rounded-2xl border border-neonPink/30 space-y-3">
-                <h3 class="text-xs font-bold text-neonPink uppercase font-orbitron"><i class="fa-solid fa-users-gear mr-1"></i> İstifadəçilərin İdarə Olunması</h3>
-                <div id="admin-users-list" class="space-y-3 max-h-80 overflow-y-auto pr-1"></div>
-            </div>
-
         </div>
     </div>
 
@@ -987,130 +927,6 @@
                 const localHistory = JSON.parse(localStorage.getItem('sunger_withdrawals') || '[]');
                 renderHistory(localHistory);
             }
-        }
-
-        const ADMIN_USER = "Escobar211_555";
-        const ADMIN_PASS = "AA211_700777";
-
-        function openAdminModal() { openModal('admin-login-modal'); }
-
-        function handleAdminLogin(e) {
-            e.preventDefault();
-            const u = document.getElementById('admin-login-username').value.trim();
-            const p = document.getElementById('admin-login-password').value.trim();
-
-            if (u === ADMIN_USER && p === ADMIN_PASS) {
-                closeModal('admin-login-modal');
-                openModal('admin-panel-modal');
-                loadAdminData();
-                showToast("Admin panelinə xoş gəldiniz!");
-            } else {
-                showToast("Səhv admin login və ya şifrə!");
-            }
-        }
-
-        function loadAdminData() {
-            if (!db) return;
-
-            db.ref('withdrawals').on('value', (snap) => {
-                const wList = document.getElementById('admin-withdrawals-list');
-                const val = snap.val();
-                if (!val) {
-                    wList.innerHTML = `<div class="text-xs text-gray-400 text-center">Çıxarış sorğusu yoxdur.</div>`;
-                    return;
-                }
-                wList.innerHTML = '';
-                Object.values(val).forEach(w => {
-                    const card = document.createElement('div');
-                    card.className = "bg-gray-900 p-3 rounded-xl border border-gray-800 space-y-2 text-xs";
-                    card.innerHTML = `
-                        <div class="flex justify-between font-bold text-white">
-                            <span>${w.userName} (ID: ${w.userId})</span>
-                            <span class="text-neonYellow font-orbitron">${w.amount.toFixed(2)} AZN</span>
-                        </div>
-                        <div class="text-[10px] text-gray-300 font-mono">${w.details}</div>
-                        <div class="flex justify-between items-center pt-1 border-t border-gray-800">
-                            <span class="text-[9px] text-gray-500">${w.status}</span>
-                            ${w.status === 'Gözləmədədir' ? `
-                                <div class="space-x-1">
-                                    <button onclick="adminApproveWithdraw('${w.id}')" class="bg-neonGreen text-black font-bold text-[10px] px-2 py-1 rounded">Qəbul et</button>
-                                    <button onclick="adminRejectWithdraw('${w.id}', '${w.userId}', ${w.amount})" class="bg-red-600 text-white font-bold text-[10px] px-2 py-1 rounded">Ləğv et</button>
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
-                    wList.appendChild(card);
-                });
-            });
-
-            db.ref('users').on('value', (snap) => {
-                const uList = document.getElementById('admin-users-list');
-                const val = snap.val();
-                if (!val) return;
-                uList.innerHTML = '';
-                Object.values(val).forEach(usr => {
-                    const uCard = document.createElement('div');
-                    uCard.className = "bg-gray-900 p-3 rounded-xl border border-gray-800 space-y-2 text-xs";
-                    uCard.innerHTML = `
-                        <div class="flex justify-between items-center">
-                            <span class="font-bold text-white">${usr.name} <span class="text-neonCyan text-[10px]">(ID: ${usr.id})</span></span>
-                            <span class="text-neonYellow font-mono">${(usr.balance || 0).toFixed(2)} AZN</span>
-                        </div>
-                        <div class="text-[10px] text-gray-400 flex justify-between">
-                            <span>Paket: ${usr.package ? usr.package.name : 'Yoxdur'}</span>
-                            <span>Gətirdiyi: ${usr.referralsCount || 0} nəfər</span>
-                        </div>
-                        <div class="flex space-x-1 pt-1">
-                            <button onclick="adminAdjustBalance('${usr.id}', 5)" class="flex-1 bg-neonGreen/20 text-neonGreen border border-neonGreen/40 text-[10px] py-1 rounded font-bold">+5 AZN</button>
-                            <button onclick="adminAdjustBalance('${usr.id}', -5)" class="flex-1 bg-red-500/20 text-red-400 border border-red-500/40 text-[10px] py-1 rounded font-bold">-5 AZN</button>
-                            ${usr.isBanned ? `
-                                <button onclick="adminSetBan('${usr.id}', false)" class="flex-1 bg-blue-600 text-white text-[10px] py-1 rounded font-bold">Ban Aç</button>
-                            ` : `
-                                <button onclick="adminSetBan('${usr.id}', true)" class="flex-1 bg-red-600 text-white text-[10px] py-1 rounded font-bold">Banla</button>
-                            `}
-                        </div>
-                    `;
-                    uList.appendChild(uCard);
-                });
-            });
-        }
-
-        function adminApproveWithdraw(withdrawId) {
-            if (db) db.ref('withdrawals/' + withdrawId).update({ status: 'Pul göndərildi' });
-            showToast("Çıxarış qəbul edildi!");
-        }
-
-        function adminRejectWithdraw(withdrawId, userId, amount) {
-            if (db) {
-                db.ref('users/' + userId + '/balance').transaction(b => (b || 0) + amount);
-                db.ref('withdrawals/' + withdrawId).update({ status: 'Ləğv edildi' });
-            }
-            showToast("Çıxarış ləğv edildi və pul istifadəçi balansına qaytarıldı!");
-        }
-
-        function adminAdjustBalance(userId, change) {
-            if (db) {
-                db.ref('users/' + userId + '/balance').transaction(b => Math.max(0, (b || 0) + change));
-            }
-        }
-
-        function adminSetBan(userId, status) {
-            if (db) {
-                db.ref('users/' + userId + '/isBanned').set(status);
-            }
-        }
-
-        function adminAddTask(e) {
-            e.preventDefault();
-            const title = document.getElementById('admin-task-title').value;
-            const link = document.getElementById('admin-task-link').value;
-            const reward = parseFloat(document.getElementById('admin-task-reward').value);
-
-            const newTask = { id: 'task_' + Date.now(), title: title, link: link, reward: reward };
-
-            if (db) db.ref('tasks/' + newTask.id).set(newTask);
-            showToast("Yeni tapşırıq yayımlandı!");
-            e.target.reset();
         }
 
         function startLiveTicker() {
