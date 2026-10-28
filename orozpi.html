@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SüngerBOB Admin Control Panel</title>
+    
+    <!-- Tailwind CSS -->a
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        neonYellow: '#ffe600',
+                        neonCyan: '#00f3ff',
+                        neonPink: '#ff007f',
+                        neonGreen: '#09ff00',
+                        spongeBg: '#020817',
+                        spongeCard: '#0a1936',
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        neonY: '0 0 15px rgba(255, 230, 0, 0.6)',
+                        neonC: '0 0 15px rgba(0, 243, 255, 0.6)',
+                        neonP: '0 0 15px rgba(255, 0, 127, 0.6)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #020817;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #030b1e; }
+        ::-webkit-scrollbar-thumb { background: #ff007f; border-radius: 4px; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- LOGIN SCREEN -->
+    <div id="admin-login-screen" class="fixed inset-0 z-50 bg-spongeBg flex items-center justify-center p-4">
+        <div class="bg-spongeCard border-2 border-neonPink rounded-2xl p-6 w-full max-w-sm text-center shadow-neonP space-y-4">
+            <div class="w-16 h-16 bg-neonPink/20 rounded-full border border-neonPink flex items-center justify-center mx-auto text-neonPink text-2xl">
+                <i class="fa-solid fa-user-shield"></i>
+            </div>
+            <h1 class="text-lg font-black font-orbitron text-neonPink">ADMIN PANEL GİRİŞİ</h1>
+            <p class="text-xs text-gray-400">İdarəetmə panelinə keçmək üçün login və şifrəni daxil edin.</p>
+
+            <form onsubmit="handleAdminLogin(event)" class="space-y-3 pt-2">
+                <input id="admin-username" type="text" placeholder="İstifadəçi adı" required class="w-full bg-gray-900 border border-gray-700 text-white text-xs p-3 rounded-xl focus:border-neonPink focus:outline-none">
+                <input id="admin-password" type="password" placeholder="Şifrə" required class="w-full bg-gray-900 border border-gray-700 text-white text-xs p-3 rounded-xl focus:border-neonPink focus:outline-none">
+                <button type="submit" class="w-full bg-neonPink text-white font-black text-xs py-3 rounded-xl uppercase tracking-wider shadow-neonP hover:brightness-110 active:scale-95 transition">
+                    Daxil Ol
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN ADMIN DASHBOARD CONTAINER -->
+    <div id="admin-dashboard" class="hidden max-w-5xl mx-auto space-y-6">
+
+        <!-- HEADER BAR -->
+        <header class="bg-spongeCard p-4 rounded-2xl border border-neonPink flex justify-between items-center shadow-neonP">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-neonPink/20 border border-neonPink flex items-center justify-center text-neonPink">
+                    <i class="fa-solid fa-crown text-lg"></i>
+                </div>
+                <div>
+                    <h2 class="text-base font-black font-orbitron text-neonPink">SÜNGERBOB ADMIN PANEL</h2>
+                    <span class="text-[10px] text-neonGreen font-mono"><i class="fa-solid fa-circle text-[8px] animate-pulse mr-1"></i> Firebase Canlı Şəbəkə İdarəçiliyi</span>
+                </div>
+            </div>
+
+            <button onclick="logoutAdmin()" class="bg-red-600/30 text-red-400 border border-red-500/50 px-3.5 py-1.5 rounded-xl text-xs font-bold hover:bg-red-600/50 transition">
+                <i class="fa-solid fa-right-from-bracket mr-1"></i> Çıxış
+            </button>
+        </header>
+
+        <!-- TOAST MESSAGE -->
+        <div id="admin-toast" class="hidden p-3 rounded-xl bg-neonPink/20 border border-neonPink text-neonPink text-xs font-semibold flex items-center justify-between">
+            <span id="admin-toast-text">Bildiriş</span>
+            <button onclick="this.parentElement.classList.add('hidden')" class="text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- LEFT COLUMN: TASK CREATOR & SYSTEM STATS -->
+            <div class="space-y-6">
+                <!-- STATS SUMMARY -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-spongeCard p-3.5 rounded-2xl border border-neonCyan/30 text-center">
+                        <div class="text-2xl font-black text-neonCyan font-orbitron" id="stat-user-count">0</div>
+                        <div class="text-[10px] text-gray-400 font-semibold uppercase mt-1">İstifadəçi</div>
+                    </div>
+                    <div class="bg-spongeCard p-3.5 rounded-2xl border border-neonYellow/30 text-center">
+                        <div class="text-2xl font-black text-neonYellow font-orbitron" id="stat-pending-withdraw">0</div>
+                        <div class="text-[10px] text-gray-400 font-semibold uppercase mt-1">Gözləyən Çıxarış</div>
+                    </div>
+                </div>
+
+                <!-- ADD NEW TASK -->
+                <div class="bg-spongeCard p-5 rounded-2xl border border-neonCyan/40 shadow-neonC space-y-4">
+                    <h3 class="text-xs font-extrabold text-neonCyan uppercase font-orbitron flex items-center gap-2">
+                        <i class="fa-solid fa-plus-circle"></i> Yeni Tapşırıq Əlavə Et
+                    </h3>
+                    <form onsubmit="adminAddTask(event)" class="space-y-3">
+                        <div>
+                            <label class="text-[11px] text-gray-400 block mb-1">Tapşırıq Başlığı:</label>
+                            <input id="admin-task-title" type="text" placeholder="məs: Instagram səhifəsini izlə" required class="w-full bg-gray-900 border border-gray-700 text-xs p-2.5 rounded-xl text-white focus:border-neonCyan focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[11px] text-gray-400 block mb-1">Keçid Linki:</label>
+                            <input id="admin-task-link" type="url" placeholder="https://..." required class="w-full bg-gray-900 border border-gray-700 text-xs p-2.5 rounded-xl text-white focus:border-neonCyan focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[11px] text-gray-400 block mb-1">Mükafat AZN:</label>
+                            <input id="admin-task-reward" type="number" step="0.01" placeholder="0.20" required class="w-full bg-gray-900 border border-gray-700 text-xs p-2.5 rounded-xl text-white focus:border-neonCyan focus:outline-none">
+                        </div>
+                        <button type="submit" class="w-full bg-neonCyan text-black font-extrabold text-xs py-3 rounded-xl uppercase tracking-wider hover:brightness-110 active:scale-98 transition">
+                            Tapşırığı Əlavə Et
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: WITHDRAWAL REQUESTS & USER MANAGEMENT -->
+            <div class="lg:col-span-2 space-y-6">
+
+                <!-- PENDING WITHDRAWALS -->
+                <div class="bg-spongeCard p-5 rounded-2xl border border-neonYellow/40 shadow-neonY space-y-3">
+                    <h3 class="text-xs font-extrabold text-neonYellow uppercase font-orbitron flex items-center gap-2">
+                        <i class="fa-solid fa-money-bill-transfer"></i> Çıxarış Sorğuları
+                    </h3>
+                    <div id="admin-withdrawals-list" class="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                        <div class="text-xs text-gray-500 text-center py-4">Məlumatlar yüklənir...</div>
+                    </div>
+                </div>
+
+                <!-- USER MANAGEMENT -->
+                <div class="bg-spongeCard p-5 rounded-2xl border border-neonPink/40 shadow-neonP space-y-3">
+                    <h3 class="text-xs font-extrabold text-neonPink uppercase font-orbitron flex items-center gap-2">
+                        <i class="fa-solid fa-users-gear"></i> İstifadəçilərin İdarəsi & Balans
+                    </h3>
+                    <div id="admin-users-list" class="space-y-3 max-h-96 overflow-y-auto pr-1">
+                        <div class="text-xs text-gray-500 text-center py-4">İstifadəçilər yüklənir...</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://gamebazar-8fc97-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        };
+
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+        } catch(e) {
+            console.error("Firebase err:", e);
+        }
+
+        const ADMIN_USER = "Escobar211_555";
+        const ADMIN_PASS = "AA211_700777";
+
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('admin-username').value.trim();
+            const p = document.getElementById('admin-password').value.trim();
+
+            if (u === ADMIN_USER && p === ADMIN_PASS) {
+                document.getElementById('admin-login-screen').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                showAdminToast("Admin Panelinə uğurla daxil oldunuz!");
+                startAdminSync();
+            } else {
+                alert("Səhv admin istifadəçi adı və ya şifrə!");
+            }
+        }
+
+        function logoutAdmin() {
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            document.getElementById('admin-login-screen').classList.remove('hidden');
+        }
+
+        function startAdminSync() {
+            if (!db) return;
+
+            // Load Withdrawals
+            db.ref('withdrawals').on('value', (snap) => {
+                const wList = document.getElementById('admin-withdrawals-list');
+                const val = snap.val();
+                if (!val) {
+                    wList.innerHTML = `<div class="text-xs text-gray-500 text-center py-2">Çıxarış sorğusu yoxdur.</div>`;
+                    document.getElementById('stat-pending-withdraw').innerText = '0';
+                    return;
+                }
+                wList.innerHTML = '';
+                const items = Object.values(val);
+                const pendingCount = items.filter(i => i.status === 'Gözləmədədir').length;
+                document.getElementById('stat-pending-withdraw').innerText = pendingCount;
+
+                items.reverse().forEach(w => {
+                    const card = document.createElement('div');
+                    card.className = "bg-gray-900 p-3.5 rounded-xl border border-gray-800 space-y-2 text-xs";
+                    card.innerHTML = `
+                        <div class="flex justify-between font-bold text-white">
+                            <span>${w.userName} <span class="text-neonCyan text-[10px]">(ID: ${w.userId})</span></span>
+                            <span class="text-neonYellow font-orbitron">${parseFloat(w.amount).toFixed(2)} AZN</span>
+                        </div>
+                        <div class="text-[11px] text-gray-300 font-mono">${w.details}</div>
+                        <div class="flex justify-between items-center pt-2 border-t border-gray-800/60">
+                            <span class="text-[10px] text-gray-400 font-semibold">${w.date || ''} | Status: <strong class="text-neonYellow">${w.status}</strong></span>
+                            ${w.status === 'Gözləmədədir' ? `
+                                <div class="space-x-1.5">
+                                    <button onclick="adminApproveWithdraw('${w.id}')" class="bg-neonGreen text-black font-extrabold text-[10px] px-2.5 py-1 rounded-lg">Qəbul et</button>
+                                    <button onclick="adminRejectWithdraw('${w.id}', '${w.userId}', ${w.amount})" class="bg-red-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-lg">Ləğv et</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    wList.appendChild(card);
+                });
+            });
+
+            // Load Users
+            db.ref('users').on('value', (snap) => {
+                const uList = document.getElementById('admin-users-list');
+                const val = snap.val();
+                if (!val) {
+                    uList.innerHTML = `<div class="text-xs text-gray-500 text-center py-2">İstifadəçi yoxdur.</div>`;
+                    document.getElementById('stat-user-count').innerText = '0';
+                    return;
+                }
+                uList.innerHTML = '';
+                const usersArr = Object.values(val);
+                document.getElementById('stat-user-count').innerText = usersArr.length;
+
+                usersArr.forEach(usr => {
+                    const uCard = document.createElement('div');
+                    uCard.className = "bg-gray-900 p-3.5 rounded-xl border border-gray-800 space-y-2 text-xs";
+                    uCard.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-white">${usr.name} <span class="text-neonCyan font-mono text-[10px]">(ID: ${usr.id})</span></span>
+                            <span class="text-neonYellow font-orbitron font-bold">${(usr.balance || 0).toFixed(2)} AZN</span>
+                        </div>
+                        <div class="text-[10px] text-gray-400 flex justify-between">
+                            <span>Paket: <strong class="text-white">${usr.package ? usr.package.name : 'Yoxdur'}</strong></span>
+                            <span>Gətirdiyi adam: <strong class="text-neonGreen">${usr.referralsCount || 0}</strong></span>
+                        </div>
+                        <div class="flex space-x-1.5 pt-1">
+                            <button onclick="adminAdjustBalance('${usr.id}', 5)" class="flex-1 bg-neonGreen/20 text-neonGreen border border-neonGreen/40 text-[10px] py-1 rounded-lg font-bold">+5 AZN</button>
+                            <button onclick="adminAdjustBalance('${usr.id}', -5)" class="flex-1 bg-red-500/20 text-red-400 border border-red-500/40 text-[10px] py-1 rounded-lg font-bold">-5 AZN</button>
+                            ${usr.isBanned ? `
+                                <button onclick="adminSetBan('${usr.id}', false)" class="flex-1 bg-blue-600 text-white text-[10px] py-1 rounded-lg font-bold">Ban Aç</button>
+                            ` : `
+                                <button onclick="adminSetBan('${usr.id}', true)" class="flex-1 bg-red-600 text-white text-[10px] py-1 rounded-lg font-bold">Banla</button>
+                            `}
+                        </div>
+                    `;
+                    uList.appendChild(uCard);
+                });
+            });
+        }
+
+        function adminApproveWithdraw(withdrawId) {
+            if (db) db.ref('withdrawals/' + withdrawId).update({ status: 'Pul göndərildi' });
+            showAdminToast("Çıxarış qəbul edildi!");
+        }
+
+        function adminRejectWithdraw(withdrawId, userId, amount) {
+            if (db) {
+                db.ref('users/' + userId + '/balance').transaction(b => (b || 0) + parseFloat(amount));
+                db.ref('withdrawals/' + withdrawId).update({ status: 'Ləğv edildi' });
+            }
+            showAdminToast("Çıxarış ləğv edildi və pul istifadəçi balansına qaytarıldı!");
+        }
+
+        function adminAdjustBalance(userId, change) {
+            if (db) {
+                db.ref('users/' + userId + '/balance').transaction(b => Math.max(0, (b || 0) + change));
+            }
+        }
+
+        function adminSetBan(userId, status) {
+            if (db) {
+                db.ref('users/' + userId + '/isBanned').set(status);
+            }
+        }
+
+        function adminAddTask(e) {
+            e.preventDefault();
+            const title = document.getElementById('admin-task-title').value.trim();
+            const link = document.getElementById('admin-task-link').value.trim();
+            const reward = parseFloat(document.getElementById('admin-task-reward').value);
+
+            const newTask = { id: 'task_' + Date.now(), title: title, link: link, reward: reward };
+
+            if (db) db.ref('tasks/' + newTask.id).set(newTask);
+            showAdminToast("Yeni tapşırıq yayımlandı!");
+            e.target.reset();
+        }
+
+        function showAdminToast(msg) {
+            const toast = document.getElementById('admin-toast');
+            const txt = document.getElementById('admin-toast-text');
+            if (toast && txt) {
+                txt.innerText = msg;
+                toast.classList.remove('hidden');
+                setTimeout(() => toast.classList.add('hidden'), 3500);
+            }
+        }
+    </script>
+</body>
+</html>
